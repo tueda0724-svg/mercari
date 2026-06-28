@@ -13,7 +13,6 @@
   }
   h1 { text-align: center; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 12px; }
 
-  /* モード切替タブ */
   .mode-switch { display: flex; background: #16213e; border-radius: 12px; padding: 4px; margin-bottom: 12px; gap: 4px; }
   .mode-btn {
     flex: 1; padding: 11px 0; text-align: center; border-radius: 9px;
@@ -29,6 +28,7 @@
   .card-title { font-size: 11px; color: #e94560; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
   .lbl { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; margin-top: 12px; }
   .lbl:first-child { margin-top: 0; }
+  .lbl-opt { font-size: 11px; color: #555; margin-left: 6px; }
 
   select, input[type="number"] {
     width: 100%; padding: 12px 14px;
@@ -56,17 +56,28 @@
   .pack-btn.active { background: #e94560; border-color: #e94560; color: #fff; }
   .pack-btn small { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; }
 
-  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
-  .btn-calc { flex: 3; padding: 14px; border-radius: 10px; border: none; background: #e94560; color: #fff; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; }
-  .btn-reset { flex: 1; padding: 14px; border-radius: 10px; border: 1px solid #e94560; background: transparent; color: #e94560; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .btn-reset { width: 100%; margin-top: 10px; padding: 13px; border-radius: 10px; border: 1px solid #555; background: transparent; color: #888; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
 
-  .result-box { border-radius: 14px; padding: 16px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-  .result-box.red { background: #e94560; }
+  /* 結果ボックス */
+  .result-box { border-radius: 14px; padding: 14px 18px; margin-bottom: 10px; }
   .result-box.green { background: #27ae60; }
-  .result-box .rb-label { font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 600; }
-  .result-box .rb-val { font-size: 30px; font-weight: 800; color: #fff; }
-  .result-box .rb-val.neg { color: #ffcccc; }
+  .result-box.red   { background: #e94560; }
+  .result-main { display: flex; justify-content: space-between; align-items: center; }
+  .rb-label { font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .rb-val { font-size: 30px; font-weight: 800; color: #fff; }
+  .rb-val.neg { color: #ffcccc; }
 
+  /* 購入価格からの損益（サブ表示） */
+  .cost-result {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cost-label { font-size: 12px; color: rgba(255,255,255,0.75); }
+  .cost-val { font-size: 20px; font-weight: 800; color: #fff; }
+  .cost-val.neg { color: #ffcccc; }
+
+  /* シミュレーター */
   .sim-box { background: #16213e; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
   .sim-title { font-size: 11px; color: #f39c12; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
   .sim-range-label { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 4px; }
@@ -83,12 +94,13 @@
   .break-even { text-align: center; font-size: 12px; color: #888; margin-top: 8px; }
   .break-even strong { color: #f39c12; }
 
+  /* 内訳 */
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .detail-item { background: #0f3460; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
   .detail-item .di-l { font-size: 12px; color: #888; }
   .detail-item .di-v { font-size: 14px; font-weight: 700; color: #e87d7d; }
-  .detail-item .di-v.g { color: #2ecc71; }
-  .detail-item .di-v.n { color: #aaa; }
+  .detail-item .di-v.g  { color: #2ecc71; }
+  .detail-item .di-v.n  { color: #aaa; }
   .detail-item .di-v.ng { color: #e74c3c; }
   .ship-note { font-size: 11px; color: #888; margin-top: 4px; }
 </style>
@@ -97,17 +109,16 @@
 
 <h1>💰 メルカリ価格設定</h1>
 
-<!-- モード切替：売価から計算を左（デフォルト） -->
 <div class="mode-switch">
   <div class="mode-btn sel-b" id="btnB" onclick="setMode('B')">🔍 売価から計算</div>
   <div class="mode-btn" id="btnA" onclick="setMode('A')">💡 利益から逆算</div>
 </div>
 
-<!-- 配送・梱包（共通） -->
+<!-- 配送・梱包 -->
 <div class="card">
   <div class="card-title">配送・梱包</div>
   <span class="lbl">配送方法</span>
-  <select id="shippingType" onchange="getShip()">
+  <select id="shippingType" onchange="getShip(); autoCalc()">
     <optgroup label="── らくらくメルカリ便（ヤマト）──">
       <option value="230">ネコポス　230円（A4・3cm以内）</option>
       <option value="450">宅急便コンパクト　450円</option>
@@ -153,7 +164,8 @@
   <div class="ship-note" id="shipNote">ネコポス　230円</div>
   <div id="customArea" style="display:none;margin-top:8px">
     <span class="lbl">送料を入力（円）</span>
-    <input type="number" id="customFee" placeholder="500" inputmode="numeric" min="0">
+    <input type="number" id="customFee" placeholder="500" inputmode="numeric" min="0"
+      oninput="autoCalc()" onchange="autoCalc()">
   </div>
   <span class="lbl">梱包手間</span>
   <div class="pack-group">
@@ -164,32 +176,41 @@
   </div>
 </div>
 
-<!-- モードB：売価入力（デフォルト表示） -->
+<!-- モードB：売価から計算 -->
 <div class="card" id="cardB">
   <div class="card-title">売価（市場価格）</div>
   <span class="lbl">出品したい価格（円）</span>
-  <input type="number" id="sellPrice" placeholder="1500" inputmode="numeric" min="0">
-  <div class="btn-row">
-    <button class="btn-calc" onclick="upd()">計算する</button>
-    <button class="btn-reset" onclick="doReset()">リセット</button>
-  </div>
+  <input type="number" id="sellPrice" placeholder="1500" inputmode="numeric" min="0"
+    oninput="autoCalc()" onchange="autoCalc()">
+  <span class="lbl">購入価格<span class="lbl-opt">任意・0円・空欄OK</span></span>
+  <input type="number" id="costPriceB" placeholder="もともとの購入価格" inputmode="numeric" min="0"
+    oninput="autoCalc()" onchange="autoCalc()">
+  <button class="btn-reset" onclick="doReset()">リセット</button>
 </div>
 
-<!-- モードA：利益入力（初期非表示） -->
+<!-- モードA：利益から逆算 -->
 <div class="card" id="cardA" style="display:none">
   <div class="card-title">目標利益</div>
   <span class="lbl">最低でもこれだけ欲しい（円）</span>
-  <input type="number" id="targetProfit" placeholder="300" inputmode="numeric" min="0">
-  <div class="btn-row">
-    <button class="btn-calc" onclick="upd()">計算する</button>
-    <button class="btn-reset" onclick="doReset()">リセット</button>
-  </div>
+  <input type="number" id="targetProfit" placeholder="300" inputmode="numeric" min="0"
+    oninput="autoCalc()" onchange="autoCalc()">
+  <span class="lbl">購入価格<span class="lbl-opt">任意・0円・空欄OK</span></span>
+  <input type="number" id="costPriceA" placeholder="もともとの購入価格" inputmode="numeric" min="0"
+    oninput="autoCalc()" onchange="autoCalc()">
+  <button class="btn-reset" onclick="doReset()">リセット</button>
 </div>
 
-<!-- 結果ボックス（初期は緑） -->
+<!-- 結果ボックス -->
 <div class="result-box green" id="resultBox">
-  <span class="rb-label" id="resultLabel">純利益</span>
-  <span class="rb-val" id="resultVal">― 円</span>
+  <div class="result-main">
+    <span class="rb-label" id="resultLabel">純利益</span>
+    <span class="rb-val" id="resultVal">― 円</span>
+  </div>
+  <!-- 購入価格からの損益（入力時のみ表示） -->
+  <div class="cost-result" id="costResult" style="display:none">
+    <span class="cost-label">購入価格からの損益</span>
+    <span class="cost-val" id="costVal">―</span>
+  </div>
 </div>
 
 <!-- シミュレーター -->
@@ -232,7 +253,6 @@ let packIdx = 0;
 let base = 0;
 let mode = 'B';
 
-// タブ切替
 function setMode(m) {
   mode = m;
   document.getElementById('btnB').className = 'mode-btn' + (m==='B' ? ' sel-b' : '');
@@ -250,6 +270,7 @@ function setPack(i) {
   [0,1,2,3].forEach(j => {
     document.getElementById('pk'+j).className = 'pack-btn' + (j===i ? ' active' : '');
   });
+  autoCalc();
 }
 
 function getShip() {
@@ -272,7 +293,9 @@ function calcProfit(sell, ship, pack) { return sell - Math.round(sell * 0.1) - s
 function clearResults() {
   document.getElementById('resultVal').textContent = '― 円';
   document.getElementById('resultVal').className = 'rb-val';
-  ['dFee','dShip','dPack','sPrice','sProfit'].forEach(id => document.getElementById(id).textContent = '―');
+  document.getElementById('costResult').style.display = 'none';
+  ['dFee','dShip','sPrice','sProfit'].forEach(id => document.getElementById(id).textContent = '―');
+  document.getElementById('dPack').textContent = '―';
   document.getElementById('dProfit').textContent = '―';
   document.getElementById('dProfit').className = 'di-v g';
   document.getElementById('breakEven').textContent = '';
@@ -281,9 +304,16 @@ function clearResults() {
   base = 0;
 }
 
+function showCostResult(profit, costPrice) {
+  if (!costPrice && costPrice !== 0) { document.getElementById('costResult').style.display = 'none'; return; }
+  const realProfit = profit - costPrice;
+  const el = document.getElementById('costVal');
+  el.textContent = (realProfit < 0 ? '▲' : '') + Math.abs(realProfit).toLocaleString() + ' 円';
+  el.className = 'cost-val' + (realProfit < 0 ? ' neg' : '');
+  document.getElementById('costResult').style.display = 'flex';
+}
+
 function setSlider(cp) {
-  const ship = getShip();
-  const pack = PACK_VALS[packIdx];
   const sl = document.getElementById('slider');
   const mn = Math.max(50, Math.floor(cp * 0.5 / 50) * 50);
   const mx = Math.ceil(cp * 2.0 / 50) * 50;
@@ -294,12 +324,14 @@ function setSlider(cp) {
   updSlider();
 }
 
-function upd() {
+function autoCalc() {
   const ship = getShip();
   const pack = PACK_VALS[packIdx];
 
   if (mode === 'B') {
     const sell = parseInt(document.getElementById('sellPrice').value) || 0;
+    const costRaw = document.getElementById('costPriceB').value;
+    const cost = costRaw === '' ? null : (parseInt(costRaw) || 0);
     if (!sell) { clearResults(); return; }
     base = sell;
     const fee    = Math.round(sell * 0.1);
@@ -313,10 +345,13 @@ function upd() {
     const dp = document.getElementById('dProfit');
     dp.textContent = (profit < 0 ? '▲' : '') + Math.abs(profit).toLocaleString() + '円';
     dp.className = 'di-v ' + (profit > 0 ? 'g' : profit < 0 ? 'ng' : 'n');
+    showCostResult(profit, cost);
     setSlider(sell);
 
   } else {
     const tgt = parseInt(document.getElementById('targetProfit').value) || 0;
+    const costRaw = document.getElementById('costPriceA').value;
+    const cost = costRaw === '' ? null : (parseInt(costRaw) || 0);
     if (!tgt) { clearResults(); return; }
     base = Math.ceil((tgt + ship + pack) / 0.9);
     const fee    = Math.round(base * 0.1);
@@ -326,6 +361,7 @@ function upd() {
     document.getElementById('dShip').textContent = fmt(ship);
     document.getElementById('dPack').textContent = fmt(pack);
     document.getElementById('dProfit').textContent = fmt(profit);
+    showCostResult(profit, cost);
     setSlider(base);
   }
 }
@@ -346,16 +382,15 @@ function updSlider() {
 }
 
 function doReset() {
-  document.getElementById('targetProfit').value = '';
-  document.getElementById('sellPrice').value = '';
-  document.getElementById('customFee').value = '';
+  ['sellPrice','costPriceB','targetProfit','costPriceA','customFee'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
   document.getElementById('shippingType').selectedIndex = 0;
   setPack(0);
   clearResults();
   getShip();
 }
 
-// 初期化
 getShip();
 </script>
 </body>
