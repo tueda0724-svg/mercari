@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>メルカリ価格設定</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, 'Hiragino Sans', sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    padding: 12px;
+    font-size: 16px;
+  }
+  h1 { text-align: center; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+
+  .card { background: #16213e; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .card-title { font-size: 11px; color: #e94560; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+
+  .lbl { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; margin-top: 12px; }
+  .lbl:first-child { margin-top: 0; }
+
+  select, input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: #0f3460;
+    border: 1px solid #1a5276;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+  }
+  input[type="number"] {
+    text-align: right;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input::placeholder { color: #444; }
+  select {
+    font-size: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+  }
+
+  /* 梱包ボタン（ラジオ不使用） */
+  .pack-group { display: flex; gap: 6px; }
+  .pack-btn {
+    flex: 1; padding: 11px 0; text-align: center;
+    border-radius: 10px; background: #0f3460; border: 1px solid #1a5276;
+    color: #aaa; font-size: 13px; font-weight: 600; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .pack-btn.active { background: #e94560; border-color: #e94560; color: #fff; }
+  .pack-btn small { display: block; font-size: 10px; font-weight: 400; margin-top: 2px; }
+
+  /* 計算・リセットボタン */
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-calc {
+    flex: 3; padding: 14px; border-radius: 10px; border: none;
+    background: #e94560; color: #fff; font-size: 17px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+  .btn-reset {
+    flex: 1; padding: 14px; border-radius: 10px; border: 1px solid #e94560;
+    background: transparent; color: #e94560; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer;
+  }
+
+  /* 出品価格 */
+  .price-box {
+    background: #e94560;
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .price-box .pb-label { font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .price-box .pb-val { font-size: 30px; font-weight: 800; color: #fff; }
+
+  /* 明細 */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .detail-item {
+    background: #0f3460; border-radius: 8px; padding: 10px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .detail-item .di-l { font-size: 12px; color: #888; }
+  .detail-item .di-v { font-size: 14px; font-weight: 700; color: #e87d7d; }
+  .detail-item .di-v.g { color: #2ecc71; }
+  .detail-item .di-v.n { color: #aaa; }
+
+  .ship-note { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* シミュレーター */
+  .sim-box { background: #16213e; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .sim-title { font-size: 11px; color: #f39c12; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+  .sim-range-label { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 4px; }
+  .sim-range-label span { color: #f39c12; font-weight: 700; }
+
+  input[type="range"] {
+    width: 100%; height: 6px; border-radius: 3px;
+    appearance: none; -webkit-appearance: none;
+    background: #0f3460; outline: none; cursor: pointer; border: none; padding: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #f39c12; cursor: pointer;
+    border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .sim-result {
+    background: #0f3460; border-radius: 10px; padding: 12px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px;
+  }
+  .sim-price { font-size: 22px; font-weight: 800; color: #f39c12; }
+  .sim-profit { font-size: 22px; font-weight: 800; }
+  .sim-profit.pos { color: #2ecc71; }
+  .sim-profit.neg { color: #e74c3c; }
+  .sim-profit.zer { color: #aaa; }
+  .sim-sub { font-size: 11px; color: #888; margin-bottom: 2px; }
+
+  .break-even { text-align: center; font-size: 12px; color: #888; margin-top: 8px; }
+  .break-even strong { color: #f39c12; }
+</style>
+</head>
+<body>
+
+<h1>💰 メルカリ価格設定</h1>
+
+<div class="card">
+  <div class="card-title">配送・梱包</div>
+  <span class="lbl">配送方法</span>
+  <select id="shippingType" onchange="upd()">
+    <optgroup label="── らくらくメルカリ便（ヤマト）──">
+      <option value="230">ネコポス　230円（A4・3cm以内）</option>
+      <option value="450">宅急便コンパクト　450円</option>
+      <option value="750">宅急便 60サイズ　750円</option>
+      <option value="870">宅急便 80サイズ　870円</option>
+      <option value="1070">宅急便 100サイズ　1,070円</option>
+      <option value="1290">宅急便 120サイズ　1,290円</option>
+      <option value="1510">宅急便 140サイズ　1,510円</option>
+      <option value="1730">宅急便 160サイズ　1,730円</option>
+      <option value="2500">宅急便 200サイズ　2,500円</option>
+    </optgroup>
+    <optgroup label="── ゆうゆうメルカリ便（郵便）──">
+      <option value="160">ゆうパケットポストmini　160円</option>
+      <option value="215">ゆうパケットポスト　215円</option>
+      <option value="230">ゆうパケット　230円</option>
+      <option value="455">ゆうパケットプラス　455円</option>
+      <option value="750">ゆうパック 60サイズ　750円</option>
+      <option value="870">ゆうパック 80サイズ　870円</option>
+      <option value="1070">ゆうパック 100サイズ　1,070円</option>
+      <option value="1290">ゆうパック 120サイズ　1,290円</option>
+      <option value="1510">ゆうパック 140サイズ　1,510円</option>
+      <option value="1730">ゆうパック 160サイズ　1,730円</option>
+      <option value="1950">ゆうパック 170サイズ　1,950円</option>
+    </optgroup>
+    <optgroup label="── エコ・たのメル便 ──">
+      <option value="730">エコメルカリ便 S　730円</option>
+      <option value="1450">エコメルカリ便 L　1,450円</option>
+      <option value="1800">たのメル便 80　1,800円</option>
+      <option value="2900">たのメル便 120　2,900円</option>
+      <option value="4000">たのメル便 160　4,000円</option>
+      <option value="5000">たのメル便 200　5,000円</option>
+      <option value="8000">たのメル便 250　8,000円</option>
+      <option value="12000">たのメル便 300　12,000円</option>
+    </optgroup>
+    <optgroup label="── 普通郵便など ──">
+      <option value="110">定形郵便　110円</option>
+      <option value="185">クリックポスト　185円</option>
+      <option value="430">レターパックライト　430円</option>
+      <option value="600">レターパックプラス　600円</option>
+      <option value="0">その他（手動入力）</option>
+    </optgroup>
+  </select>
+  <div class="ship-note" id="shipNote">ネコポス　230円</div>
+  <div id="customArea" style="display:none;margin-top:8px">
+    <span class="lbl">送料を入力（円）</span>
+    <input type="number" id="customFee" placeholder="500" inputmode="numeric" min="0">
+  </div>
+
+  <span class="lbl">梱包手間</span>
+  <div class="pack-group">
+    <div class="pack-btn active" id="pk0" onclick="setPack(0)">小<small>10円</small></div>
+    <div class="pack-btn" id="pk1" onclick="setPack(1)">中<small>50円</small></div>
+    <div class="pack-btn" id="pk2" onclick="setPack(2)">大<small>100円</small></div>
+    <div class="pack-btn" id="pk3" onclick="setPack(3)">特大<small>200円</small></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">目標利益</div>
+  <span class="lbl">最低でもこれだけ欲しい（円）</span>
+  <input type="number" id="targetProfit" placeholder="300" inputmode="numeric" min="0">
+  <div class="btn-row">
+    <button class="btn-calc" onclick="upd()">計算する</button>
+    <button class="btn-reset" onclick="reset()">リセット</button>
+  </div>
+</div>
+
+<div class="price-box">
+  <span class="pb-label">出品価格</span>
+  <span class="pb-val" id="outPrice">― 円</span>
+</div>
+
+<div class="card">
+  <div class="card-title">内訳</div>
+  <div class="detail-grid">
+    <div class="detail-item"><span class="di-l">手数料</span><span class="di-v" id="dFee">―</span></div>
+    <div class="detail-item"><span class="di-l">送料</span><span class="di-v" id="dShip">―</span></div>
+    <div class="detail-item"><span class="di-l">梱包費</span><span class="di-v n" id="dPack">―</span></div>
+    <div class="detail-item"><span class="di-l">純利益</span><span class="di-v g" id="dProfit">―</span></div>
+  </div>
+</div>
+
+<div class="sim-box">
+  <div class="sim-title">価格シミュレーター</div>
+  <div class="sim-range-label">
+    <span id="sMin">―</span>
+    <span>◀ 安く　高く ▶</span>
+    <span id="sMax">―</span>
+  </div>
+  <input type="range" id="slider" min="0" max="100" value="50" step="50"
+    oninput="updSlider()" onchange="updSlider()">
+  <div class="sim-result">
+    <div>
+      <div class="sim-sub">設定価格</div>
+      <div class="sim-price" id="sPrice">― 円</div>
+    </div>
+    <div style="text-align:right">
+      <div class="sim-sub">そのときの利益</div>
+      <div class="sim-profit zer" id="sProfit">―</div>
+    </div>
+  </div>
+  <div class="break-even" id="breakEven"></div>
+</div>
+
+<script>
+const PACK_VALS = [10, 50, 100, 200];
+let packIdx = 0;
+let base = 0;
+
+function setPack(i) {
+  packIdx = i;
+  [0,1,2,3].forEach(j => {
+    document.getElementById('pk'+j).className = 'pack-btn' + (j===i ? ' active' : '');
+  });
+}
+
+function getShip() {
+  const v = parseInt(document.getElementById('shippingType').value) || 0;
+  const sel = document.getElementById('shippingType');
+  const txt = sel.options[sel.selectedIndex].text.split('　')[0];
+  if (v === 0) {
+    document.getElementById('customArea').style.display = 'block';
+    document.getElementById('shipNote').textContent = '送料を手動入力してください';
+    return parseInt(document.getElementById('customFee').value) || 0;
+  }
+  document.getElementById('customArea').style.display = 'none';
+  document.getElementById('shipNote').textContent = txt + '　' + v.toLocaleString() + '円';
+  return v;
+}
+
+function fmt(n) { return n.toLocaleString('ja-JP') + '円'; }
+
+function calcProfit(sell, ship, pack) {
+  return sell - Math.round(sell * 0.1) - ship - pack;
+}
+
+function upd() {
+  const ship = getShip();
+  const pack = PACK_VALS[packIdx];
+  const tgt  = parseInt(document.getElementById('targetProfit').value) || 0;
+
+  if (!tgt) {
+    document.getElementById('outPrice').textContent = '― 円';
+    ['dFee','dShip','dPack','dProfit','sPrice','sProfit'].forEach(id => {
+      document.getElementById(id).textContent = '―';
+    });
+    document.getElementById('breakEven').textContent = '';
+    document.getElementById('sMin').textContent = '―';
+    document.getElementById('sMax').textContent = '―';
+    base = 0;
+    return;
+  }
+
+  base = Math.ceil((tgt + ship + pack) / 0.9);
+  const fee    = Math.round(base * 0.1);
+  const profit = base - fee - ship - pack;
+
+  document.getElementById('outPrice').textContent = base.toLocaleString() + ' 円';
+  document.getElementById('dFee').textContent     = fmt(fee);
+  document.getElementById('dShip').textContent    = fmt(ship);
+  document.getElementById('dPack').textContent    = fmt(pack);
+  document.getElementById('dProfit').textContent  = fmt(profit);
+
+  const sl  = document.getElementById('slider');
+  const mn  = Math.max(50, Math.floor(base * 0.5 / 50) * 50);
+  const mx  = Math.ceil(base * 2.0 / 50) * 50;
+  sl.min = mn; sl.max = mx; sl.step = 50;
+  sl.value = Math.round(base / 50) * 50;
+  document.getElementById('sMin').textContent = mn.toLocaleString() + '円';
+  document.getElementById('sMax').textContent = mx.toLocaleString() + '円';
+  updSlider();
+}
+
+function updSlider() {
+  if (!base) return;
+  const ship  = getShip();
+  const pack  = PACK_VALS[packIdx];
+  const price = parseInt(document.getElementById('slider').value);
+  const p     = calcProfit(price, ship, pack);
+
+  document.getElementById('sPrice').textContent = price.toLocaleString() + ' 円';
+  const el = document.getElementById('sProfit');
+  el.textContent = (p < 0 ? '▲' : '') + Math.abs(p).toLocaleString() + ' 円';
+  el.className = 'sim-profit ' + (p > 0 ? 'pos' : p < 0 ? 'neg' : 'zer');
+
+  const brk = Math.ceil((ship + pack) / 0.9);
+  document.getElementById('breakEven').innerHTML =
+    '損益分岐点（利益ゼロ）：<strong>' + brk.toLocaleString() + '円</strong>';
+}
+
+function reset() {
+  document.getElementById('targetProfit').value = '';
+  document.getElementById('customFee').value = '';
+  document.getElementById('shippingType').selectedIndex = 0;
+  setPack(0);
+  base = 0;
+  document.getElementById('outPrice').textContent = '― 円';
+  ['dFee','dShip','dPack','dProfit','sPrice','sProfit'].forEach(id => {
+    document.getElementById(id).textContent = '―';
+  });
+  document.getElementById('breakEven').textContent = '';
+  document.getElementById('sMin').textContent = '―';
+  document.getElementById('sMax').textContent = '―';
+  getShip();
+}
+
+getShip();
+</script>
+</body>
+</html>
